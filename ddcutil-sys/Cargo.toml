@@ -1,0 +1,15 @@
+[package]
+name = "ddcutil-sys"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[build-dependencies]
+bindgen = { version = "0.68.1", optional = true }
+
+[features]
+bindgen = ["dep:bindgen"]
+default = []
