@@ -15,5 +15,9 @@ pub fn main() {
 }
 #[cfg(not(feature = "bindgen"))]
 pub fn main() {
-    println!("cargo:rustc-link-lib=ddcutil");
+    if pkg_config::probe_library("ddcutil").is_ok() {
+        println!("ddcutil found via pkg-config");
+    } else {
+        println!("cargo:rustc-link-lib=ddcutil");
+    }
 }

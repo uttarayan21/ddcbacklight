@@ -9,6 +9,7 @@ edition = "2021"
 
 [build-dependencies]
 bindgen = { version = "0.68.1", optional = true }
+pkg-config = "0.3.31"
 
 [features]
 bindgen = ["dep:bindgen"]

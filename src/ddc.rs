@@ -69,7 +69,9 @@ impl DisplayInfo<'_> {
     }
 
     pub fn model(&self) -> &str {
-        self.info.model_name.as_ascii()
+        unsafe { core::ffi::CStr::from_ptr(self.info.model_name.as_ptr()) }
+            .to_str()
+            .unwrap()
     }
 }
 
