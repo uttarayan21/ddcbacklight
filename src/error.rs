@@ -1,6 +1,6 @@
 use crate::ascii::AsAscii;
 use core::fmt::Display;
-use ddcutil_sys::{ddca_rc_desc, ddca_rc_name, DDCA_Status};
+use ddcutil_sys::bindings::{ddca_rc_desc, ddca_rc_name, DDCA_Status};
 use error_stack::Report;
 use thiserror::Error;
 

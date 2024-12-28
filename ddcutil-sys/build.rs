@@ -6,7 +6,8 @@ pub fn main() {
     let bindings = bindgen::Builder::default()
         .header("headers/ddcutil.h")
         .header("headers/version.h")
-        .allowlist_file("ddcutil_c_api.h")
+        // .allowlist_file("*.c_api\\.h")
+        // .allowlist_file("*._types\\.h")
         .generate()
         .expect("Bindings");
     bindings

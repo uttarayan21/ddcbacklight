@@ -65,7 +65,7 @@
             inherit src;
             pname = "ddcbacklight";
             doCheck = false;
-            # LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
             # nativeBuildInputs = with pkgs; [
             #   cmake
             #   llvmPackages.libclang.lib
@@ -122,18 +122,16 @@
 
         devShells = {
           default = pkgs.mkShell {
-            packages = with pkgs;
-              [
-                stableToolchainWithRustAnalyzer
-                cargo-nextest
-                cargo-deny
-                ddcutil
-                pkg-config
-                cargo-outdated
-              ]
-              ++ (lib.optionals pkgs.stdenv.isDarwin [
-                # darwin.apple_sdk.frameworks.Metal
-              ]);
+            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+            packages = with pkgs; [
+              stableToolchainWithRustAnalyzer
+              cargo-nextest
+              cargo-deny
+              ddcutil
+              pkg-config
+              rust-bindgen
+              cargo-outdated
+            ];
           };
         };
       }
