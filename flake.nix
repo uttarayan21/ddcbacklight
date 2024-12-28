@@ -129,6 +129,7 @@
                 cargo-deny
                 ddcutil
                 pkg-config
+                cargo-outdated
               ]
               ++ (lib.optionals pkgs.stdenv.isDarwin [
                 # darwin.apple_sdk.frameworks.Metal
