@@ -122,20 +122,23 @@
         };
 
         devShells = {
-          default = pkgs.mkShell {
-            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-            nativeBuildInputs = with pkgs; [pkg-config];
-            buildInputs = with pkgs; [ddcutil];
-            packages = with pkgs; [
-              stableToolchainWithRustAnalyzer
-              cargo-nextest
-              cargo-deny
-              ddcutil
-              pkg-config
-              rust-bindgen
-              cargo-outdated
-            ];
-          };
+          default =
+            pkgs.mkShell.override {
+              stdenv = pkgs.clangStdenv;
+            } {
+              LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+              nativeBuildInputs = with pkgs; [pkg-config];
+              buildInputs = with pkgs; [ddcutil];
+              packages = with pkgs; [
+                stableToolchainWithRustAnalyzer
+                cargo-nextest
+                cargo-deny
+                ddcutil
+                pkg-config
+                rust-bindgen
+                cargo-outdated
+              ];
+            };
         };
       }
     )
