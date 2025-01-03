@@ -63,6 +63,7 @@
         commonArgs =
           {
             inherit src;
+            stdenv = pkgs.clangStdenv;
             pname = "ddcbacklight";
             doCheck = false;
             LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
@@ -123,6 +124,8 @@
         devShells = {
           default = pkgs.mkShell {
             LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+            nativeBuildInputs = with pkgs; [pkg-config];
+            buildInputs = with pkgs; [ddcutil];
             packages = with pkgs; [
               stableToolchainWithRustAnalyzer
               cargo-nextest

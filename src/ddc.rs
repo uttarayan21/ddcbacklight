@@ -1,4 +1,3 @@
-use crate::ascii::AsAscii;
 use crate::error::*;
 use core::ptr::{null_mut, NonNull};
 use ddcutil_sys::bindings::*;
