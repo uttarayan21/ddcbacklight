@@ -185,19 +185,6 @@ pub struct Backlight {
     pub max: u16,
 }
 
-#[test]
-fn test_input() {
-    let list = DisplayList::probe(true).unwrap();
-    for dinfo in list.iter() {
-        tracing::info!("Found display: {}", dinfo.model());
-        let display = dinfo.open().unwrap();
-        dbg!(dinfo);
-        dbg!(&display);
-        let input = display.input().unwrap();
-        dbg!(input);
-    }
-}
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum IOPath {
     I2C(i32),
