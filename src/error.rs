@@ -30,6 +30,8 @@ pub enum DdcutilErrorKind {
     UnknownHandle,
     #[error("Out of Range")]
     OutOfRange,
+    #[error("Other error")]
+    Other,
 }
 
 #[derive(Debug, Error)]

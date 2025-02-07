@@ -31,7 +31,7 @@ fn main() -> Result<()> {
     }
 
     match cli.op {
-        Op::Get => {
+        Op::GetBrightnexs => {
             let list = DisplayList::probe(true)?;
             for dinfo in list.iter() {
                 tracing::info!("Found display: {}", dinfo.model());
@@ -45,7 +45,7 @@ fn main() -> Result<()> {
                 );
             }
         }
-        Op::Set { brightness } => {
+        Op::SetBrightness { brightness } => {
             let list = DisplayList::probe(true)?;
             for dinfo in list.iter() {
                 tracing::info!("Found display: {}", dinfo.model());
@@ -58,6 +58,36 @@ fn main() -> Result<()> {
                     backlight.current,
                     backlight.max
                 );
+            }
+        }
+        Op::GetInput { bus } => {
+            let list = DisplayList::probe(true)?;
+            for dinfo in list.iter().filter(|info| {
+                bus.map(|bus| info.io_path() == IOPath::I2C(bus as i32))
+                    .unwrap_or(true)
+            }) {
+                tracing::info!("Found display: {} ({})", dinfo.model(), dinfo.io_path());
+                let display = dinfo.open()?;
+                let input = display.input()?;
+                println!(
+                    "{}: {:?}: {}",
+                    dinfo.model().green(),
+                    input,
+                    dinfo.io_path()
+                );
+            }
+        }
+        Op::SetInput { bus, input } => {
+            let list = DisplayList::probe(true)?;
+            if let Some(dinfo) = list
+                .iter()
+                .find(|info| info.io_path() == IOPath::I2C(bus as i32))
+            {
+                tracing::info!("Found display: {}", dinfo.model());
+                let display = dinfo.open()?;
+                display.set_input(input)?;
+                let input = display.input()?;
+                println!("{}: {:?}", dinfo.model().blue(), input);
             }
         }
     }

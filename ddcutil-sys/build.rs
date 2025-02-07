@@ -4,6 +4,7 @@ pub fn main() {
     let out_dir = std::path::PathBuf::from(std::env::var_os("OUT_DIR").expect("OUT_DIR"));
 
     let bindings = bindgen::Builder::default()
+        .impl_debug(true)
         .header("headers/ddcutil.h")
         .header("headers/version.h")
         // .allowlist_file("*.c_api\\.h")

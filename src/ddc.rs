@@ -2,6 +2,37 @@ use crate::error::*;
 use core::ptr::{null_mut, NonNull};
 use ddcutil_sys::bindings::*;
 
+#[derive(Debug, Clone, Copy)]
+pub enum Input {
+    HDMI(u8),
+    DP(u8),
+    TYPEC(u8),
+}
+
+impl From<Input> for u8 {
+    fn from(input: Input) -> u8 {
+        match input {
+            Input::HDMI(1) => 0x11,
+            Input::HDMI(2) => 0x12,
+            Input::DP(1) => 0x0f,
+            Input::DP(2) => 0x10,
+            _ => todo!(),
+        }
+    }
+}
+impl TryFrom<u8> for Input {
+    type Error = DDCError;
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+        Ok(match value {
+            0x11 => Self::HDMI(1),
+            0x12 => Self::HDMI(2),
+            0x0f => Self::DP(1),
+            0x10 => Self::DP(2),
+            _ => Err(DDCError::new(DdcutilErrorKind::Other))?,
+        })
+    }
+}
+
 pub struct DisplayList {
     list: NonNull<DDCA_Display_Info_List>,
     len: usize,
@@ -58,6 +89,7 @@ impl<'i> Iterator for DisplayListIter<'i> {
     }
 }
 
+#[derive(Debug)]
 pub struct DisplayInfo<'info> {
     info: &'info DDCA_Display_Info,
 }
@@ -67,6 +99,10 @@ impl DisplayInfo<'_> {
         Display::open(self)
     }
 
+    pub fn io_path(&self) -> IOPath {
+        self.info.path.into()
+    }
+
     pub fn model(&self) -> &str {
         unsafe { core::ffi::CStr::from_ptr(self.info.model_name.as_ptr()) }
             .to_str()
@@ -74,12 +110,14 @@ impl DisplayInfo<'_> {
     }
 }
 
+#[derive(Debug)]
 pub struct Display {
     handle: DDCA_Display_Handle,
 }
 
 impl Display {
     const BACKLIGHT: u8 = 0x10;
+    const INPUT: u8 = 0x60;
     pub fn open(info: &DisplayInfo) -> Result<Self> {
         let dref = info.info.dref;
         let mut dh = null_mut();
@@ -114,10 +152,75 @@ impl Display {
             current: u16::from_be_bytes([out.sh, out.sl]),
         })
     }
+
+    pub fn input(&self) -> Result<Input> {
+        let mut out = DDCA_Non_Table_Vcp_Value {
+            mh: 0,
+            ml: 0,
+            sh: 0,
+            sl: 0,
+        };
+        let rc = unsafe { ddca_get_non_table_vcp_value(self.handle, Self::INPUT, &mut out) };
+        LibDDCUtilError::from_rc(rc)?;
+        Ok(match (out.ml, out.sl) {
+            (_, 0x0f) => Input::DP(1),   // DP-1
+            (_, 0x10) => Input::DP(2),   // DP-2
+            (_, 0x11) => Input::HDMI(1), // HDMI-1
+            (_, 0x12) => Input::HDMI(2), // HDMI-2
+            _ => todo!(),
+        })
+    }
+    pub fn set_input(&self, input: Input) -> Result<()> {
+        let value: u8 = input.into();
+        let rc = unsafe { ddca_set_non_table_vcp_value(self.handle, Self::INPUT, 0, value) };
+        LibDDCUtilError::from_rc(rc)?;
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
 pub struct Backlight {
     pub current: u16,
     pub max: u16,
+}
+
+#[test]
+fn test_input() {
+    let list = DisplayList::probe(true).unwrap();
+    for dinfo in list.iter() {
+        tracing::info!("Found display: {}", dinfo.model());
+        let display = dinfo.open().unwrap();
+        dbg!(dinfo);
+        dbg!(&display);
+        let input = display.input().unwrap();
+        dbg!(input);
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum IOPath {
+    I2C(i32),
+    USB(i32),
+}
+
+impl core::fmt::Display for IOPath {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::I2C(bus) => write!(f, "/dev/i2c-{}", bus),
+            Self::USB(dev) => write!(f, "/dev/hiddev{}", dev),
+        }
+    }
+}
+
+impl From<DDCA_IO_Path> for IOPath {
+    fn from(path: DDCA_IO_Path) -> Self {
+        let discriminant = path.io_mode;
+        if discriminant == DDCA_IO_Mode_DDCA_IO_I2C {
+            unsafe { Self::I2C(path.path.i2c_busno) }
+        } else if discriminant == DDCA_IO_Mode_DDCA_IO_USB {
+            unsafe { Self::USB(path.path.hiddev_devno) }
+        } else {
+            unreachable!("DDCUTIL returned an unknown IOPath");
+        }
+    }
 }
