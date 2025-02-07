@@ -3,6 +3,7 @@ use core::ptr::{null_mut, NonNull};
 use ddcutil_sys::bindings::*;
 
 #[derive(Debug, Clone, Copy)]
+#[allow(warnings)]
 pub enum Input {
     HDMI(u8),
     DP(u8),
@@ -200,14 +201,14 @@ fn test_input() {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum IOPath {
     I2C(i32),
-    USB(i32),
+    Usb(i32),
 }
 
 impl core::fmt::Display for IOPath {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::I2C(bus) => write!(f, "/dev/i2c-{}", bus),
-            Self::USB(dev) => write!(f, "/dev/hiddev{}", dev),
+            Self::Usb(dev) => write!(f, "/dev/hiddev{}", dev),
         }
     }
 }
@@ -218,7 +219,7 @@ impl From<DDCA_IO_Path> for IOPath {
         if discriminant == DDCA_IO_Mode_DDCA_IO_I2C {
             unsafe { Self::I2C(path.path.i2c_busno) }
         } else if discriminant == DDCA_IO_Mode_DDCA_IO_USB {
-            unsafe { Self::USB(path.path.hiddev_devno) }
+            unsafe { Self::Usb(path.path.hiddev_devno) }
         } else {
             unreachable!("DDCUTIL returned an unknown IOPath");
         }
