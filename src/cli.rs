@@ -11,21 +11,27 @@ pub struct Args {
 }
 #[derive(Debug, Subcommand)]
 pub enum Op {
-    SetBrightness { brightness: u8 },
+    #[clap(name = "set")]
+    SetBrightness {
+        brightness: u8,
+    },
+    #[clap(name = "get")]
     GetBrightnexs,
-    SetInput { bus: u8, input: crate::ddc::Input },
-    GetInput { bus: Option<u8> },
+    SetInput {
+        bus: u8,
+        input: crate::ddc::Input,
+    },
+    GetInput {
+        bus: Option<u8>,
+    },
+    Completions {
+        shell: clap_complete::Shell,
+    },
 }
 
 impl ValueEnum for crate::ddc::Input {
     fn value_variants<'a>() -> &'a [Self] {
-        &[
-            Self::HDMI(1),
-            Self::HDMI(2),
-            Self::DP(1),
-            Self::DP(2),
-            Self::TYPEC(1),
-        ]
+        &[Self::HDMI(1), Self::HDMI(2), Self::DP(1), Self::DP(2)]
     }
 
     fn to_possible_value(&self) -> Option<builder::PossibleValue> {
@@ -34,8 +40,17 @@ impl ValueEnum for crate::ddc::Input {
             Self::HDMI(2) => builder::PossibleValue::new("HDMI-2"),
             Self::DP(1) => builder::PossibleValue::new("DP-1"),
             Self::DP(2) => builder::PossibleValue::new("DP-2"),
-            Self::TYPEC(1) => builder::PossibleValue::new("TYPEC"),
             _ => return None,
         })
     }
+}
+
+pub(crate) fn completions(shell: clap_complete::Shell) {
+    let mut command = Args::command();
+    clap_complete::aot::generate(
+        shell,
+        &mut command,
+        env!("CARGO_BIN_NAME"),
+        &mut std::io::stdout(),
+    );
 }

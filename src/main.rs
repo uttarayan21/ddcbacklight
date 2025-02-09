@@ -90,6 +90,9 @@ fn main() -> Result<()> {
                 println!("{}: {:?}", dinfo.model().blue(), input);
             }
         }
+        Op::Completions { shell } => {
+            cli::completions(shell);
+        }
     }
     Ok(())
 }

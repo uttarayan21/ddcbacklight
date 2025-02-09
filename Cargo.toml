@@ -10,7 +10,8 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-colored = "2"
+clap_complete = "4.5.44"
+colored = "3"
 ddcutil-sys = { workspace = true, features = ["bindgen"] }
 error-stack = "0.5"
 thiserror = "2"
