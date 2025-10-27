@@ -31,9 +31,12 @@ fn main() -> Result<()> {
     }
 
     match cli.op {
-        Op::GetBrightnexs => {
+        Op::GetBrightness { bus } => {
             let list = DisplayList::probe(true)?;
-            for dinfo in list.iter() {
+            for dinfo in list.iter().filter(|info| {
+                bus.map(|bus| info.io_path() == IOPath::I2C(bus as i32))
+                    .unwrap_or(true)
+            }) {
                 tracing::info!("Found display: {}", dinfo.model());
                 let display = dinfo.open()?;
                 let backlight = display.backlight_get()?;
@@ -45,9 +48,12 @@ fn main() -> Result<()> {
                 );
             }
         }
-        Op::SetBrightness { brightness } => {
+        Op::SetBrightness { brightness, bus } => {
             let list = DisplayList::probe(true)?;
-            for dinfo in list.iter() {
+            for dinfo in list.iter().filter(|info| {
+                bus.map(|bus| info.io_path() == IOPath::I2C(bus as i32))
+                    .unwrap_or(true)
+            }) {
                 tracing::info!("Found display: {}", dinfo.model());
                 let display = dinfo.open()?;
                 display.backlight_set(brightness.into())?;
@@ -57,6 +63,48 @@ fn main() -> Result<()> {
                     dinfo.model().blue(),
                     backlight.current,
                     backlight.max
+                );
+            }
+        }
+        Op::IncreaseBrightness { amount, bus } => {
+            let list = DisplayList::probe(true)?;
+            for dinfo in list.iter().filter(|info| {
+                bus.map(|bus| info.io_path() == IOPath::I2C(bus as i32))
+                    .unwrap_or(true)
+            }) {
+                tracing::info!("Found display: {}", dinfo.model());
+                let display = dinfo.open()?;
+                let current_backlight = display.backlight_get()?;
+                let new_brightness = std::cmp::min(100, current_backlight.current + amount as u16);
+                display.backlight_set(new_brightness)?;
+                let backlight = display.backlight_get()?;
+                println!(
+                    "{}: {}/{} (increased by {})",
+                    dinfo.model().blue(),
+                    backlight.current,
+                    backlight.max,
+                    amount
+                );
+            }
+        }
+        Op::DecreaseBrightness { amount, bus } => {
+            let list = DisplayList::probe(true)?;
+            for dinfo in list.iter().filter(|info| {
+                bus.map(|bus| info.io_path() == IOPath::I2C(bus as i32))
+                    .unwrap_or(true)
+            }) {
+                tracing::info!("Found display: {}", dinfo.model());
+                let display = dinfo.open()?;
+                let current_backlight = display.backlight_get()?;
+                let new_brightness = current_backlight.current.saturating_sub(amount as u16);
+                display.backlight_set(new_brightness)?;
+                let backlight = display.backlight_get()?;
+                println!(
+                    "{}: {}/{} (decreased by {})",
+                    dinfo.model().blue(),
+                    backlight.current,
+                    backlight.max,
+                    amount
                 );
             }
         }

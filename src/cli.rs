@@ -6,17 +6,34 @@ pub struct Args {
     pub op: Op,
     #[arg(short, long, action = clap::ArgAction::Count)]
     pub verbosity: u8,
-    #[arg(short, long)]
-    pub bus: Option<u8>,
 }
 #[derive(Debug, Subcommand)]
 pub enum Op {
     #[clap(name = "set")]
     SetBrightness {
         brightness: u8,
+        #[arg(short, long)]
+        bus: Option<u8>,
     },
     #[clap(name = "get")]
-    GetBrightnexs,
+    GetBrightness {
+        #[arg(short, long)]
+        bus: Option<u8>,
+    },
+    #[clap(name = "inc")]
+    IncreaseBrightness {
+        #[arg(default_value = "10")]
+        amount: u8,
+        #[arg(short, long)]
+        bus: Option<u8>,
+    },
+    #[clap(name = "dec")]
+    DecreaseBrightness {
+        #[arg(default_value = "10")]
+        amount: u8,
+        #[arg(short, long)]
+        bus: Option<u8>,
+    },
     SetInput {
         bus: u8,
         input: crate::ddc::Input,
