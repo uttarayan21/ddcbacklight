@@ -120,6 +120,14 @@
           ddcbacklight = craneLib.buildPackage (commonArgs
             // {inherit cargoArtifacts;}
             // {
+              meta = with lib; {
+                homepage = "https://github.com/uttarayan21/ddcbacklight";
+                description = "DDC/CI backlight control";
+                license = licenses.gpl3;
+                maintainers = with maintainers; [uttarayan21];
+                platforms = platforms.linux;
+                mainProgram = "xbacklight";
+              };
               postInstall = ''
                 mkdir -p $out/bin
                 mkdir -p $out/share/bash-completions
