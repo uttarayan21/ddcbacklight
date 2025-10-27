@@ -63,7 +63,7 @@
         commonArgs =
           {
             inherit src;
-            stdenv = pkgs.clangStdenv;
+            stdenv = p: p.clangStdenv;
             pname = "ddcbacklight";
             doCheck = false;
             LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
