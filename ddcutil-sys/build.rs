@@ -9,6 +9,8 @@ pub fn main() {
         .header("headers/version.h")
         // .allowlist_file("*.c_api\\.h")
         // .allowlist_file("*._types\\.h")
+        .generate_comments(true)
+        .generate_block(true)
         .generate()
         .expect("Bindings");
     bindings

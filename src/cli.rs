@@ -4,42 +4,53 @@ use clap::*;
 pub struct Args {
     #[clap(subcommand)]
     pub op: Op,
-    #[arg(short, long, action = clap::ArgAction::Count)]
+    #[arg(short, long, action = clap::ArgAction::Count, global = true)]
     pub verbosity: u8,
 }
+
+#[derive(Debug, clap::Args)]
+pub struct MonitorIdentifier {
+    #[arg(short, long, group = "identifier")]
+    pub buses: Vec<u8>,
+    #[arg(short, long, group = "identifier")]
+    pub names: Vec<String>,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum Op {
     #[clap(name = "set")]
     SetBrightness {
         brightness: u8,
-        #[arg(short, long)]
-        bus: Option<u8>,
+        #[clap(flatten)]
+        monitor: MonitorIdentifier,
     },
     #[clap(name = "get")]
     GetBrightness {
-        #[arg(short, long)]
-        bus: Option<u8>,
+        #[clap(flatten)]
+        monitor: MonitorIdentifier,
     },
     #[clap(name = "inc")]
     IncreaseBrightness {
         #[arg(default_value = "10")]
         amount: u8,
-        #[arg(short, long)]
-        bus: Option<u8>,
+        #[clap(flatten)]
+        monitor: MonitorIdentifier,
     },
     #[clap(name = "dec")]
     DecreaseBrightness {
         #[arg(default_value = "10")]
         amount: u8,
-        #[arg(short, long)]
-        bus: Option<u8>,
+        #[clap(flatten)]
+        monitor: MonitorIdentifier,
     },
     SetInput {
-        bus: u8,
+        #[clap(flatten)]
+        monitor: MonitorIdentifier,
         input: crate::ddc::Input,
     },
     GetInput {
-        bus: Option<u8>,
+        #[clap(flatten)]
+        monitor: MonitorIdentifier,
     },
     Completions {
         shell: clap_complete::Shell,

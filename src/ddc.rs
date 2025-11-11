@@ -35,7 +35,7 @@ impl TryFrom<u8> for Input {
 }
 
 pub struct DisplayList {
-    list: NonNull<DDCA_Display_Info_List>,
+    list: NonNull<DDCA_Display_Ref>,
     len: usize,
     // handle: NonNull<DDCA_Display_Handle>,
 }
@@ -43,27 +43,46 @@ pub struct DisplayList {
 impl DisplayList {
     pub fn probe(unsupported: bool) -> Result<Self> {
         tracing::info!("Check for monitors using ddca_get_displays()");
-        let mut dlist: *mut DDCA_Display_Info_List = null_mut();
-        let rc = unsafe { ddca_get_display_info_list2(unsupported, &mut dlist) };
-        assert!(!dlist.is_null());
+        let mut drefs: *mut DDCA_Display_Ref = null_mut();
+        let rc = unsafe { ddca_get_display_refs(unsupported, &mut drefs) };
         LibDDCUtilError::from_rc(rc)?;
-        let dlist = unsafe { &mut *dlist };
-        if dlist.ct == 0 {
-            tracing::info!("No DDC capable displays found");
-            return Err(DDCError::new(DdcutilErrorKind::NoDisplays));
-        } else {
-            tracing::trace!("Found {} DDC capable displays", dlist.ct);
-        }
+        let dlist_count = {
+            if drefs.is_null() {
+                0
+            } else {
+                let mut count = 0;
+                let mut current = drefs;
+                while !(unsafe { *current }).is_null() {
+                    count += 1;
+                    unsafe {
+                        current = current.offset(1);
+                    }
+                }
+                count
+            }
+        };
 
         Ok(Self {
-            // handle: NonNull::new(&mut dh)
-            //     .ok_or_else(|| DDCError::new(DdcutilErrorKind::UnknownHandle))?,
-            list: NonNull::new(dlist)
+            list: NonNull::new(drefs)
                 .ok_or_else(|| DDCError::new(DdcutilErrorKind::UnknownHandle))?,
-            len: dlist.ct as usize,
+            len: dlist_count,
         })
     }
-    pub fn iter(&self) -> DisplayListIter {
+
+    pub fn get(&self, index: usize) -> Result<DisplayInfo<'_>> {
+        if index < self.len {
+            let mut info2: *mut DDCA_Display_Info2 = null_mut();
+            let dref: *mut DDCA_Display_Ref = unsafe { self.list.as_ptr().offset(index as isize) };
+            let rc = unsafe { ddca_get_display_info2(*dref, &mut info2) };
+            LibDDCUtilError::from_rc(rc)?;
+            let info2 = unsafe { &*info2 };
+            Ok(DisplayInfo { info: info2 })
+        } else {
+            Err(DDCError::new(DdcutilErrorKind::OutOfRange))
+        }
+    }
+
+    pub fn iter(&self) -> DisplayListIter<'_> {
         DisplayListIter {
             list: self,
             index: 0,
@@ -80,10 +99,19 @@ impl<'i> Iterator for DisplayListIter<'i> {
     type Item = DisplayInfo<'i>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.index < self.list.len {
-            let dinf: &DDCA_Display_Info =
-                unsafe { &self.list.list.as_ref().info.as_slice(self.list.len)[self.index] };
+            let out = self
+                .list
+                .get(self.index)
+                .inspect_err(|f| {
+                    tracing::error!(
+                        "Error getting display info at index {}: {:?}",
+                        self.index,
+                        f
+                    );
+                })
+                .ok();
             self.index += 1;
-            Some(DisplayInfo { info: dinf })
+            out
         } else {
             None
         }
@@ -92,7 +120,7 @@ impl<'i> Iterator for DisplayListIter<'i> {
 
 #[derive(Debug)]
 pub struct DisplayInfo<'info> {
-    info: &'info DDCA_Display_Info,
+    info: &'info DDCA_Display_Info2,
 }
 
 impl DisplayInfo<'_> {
@@ -107,7 +135,24 @@ impl DisplayInfo<'_> {
     pub fn model(&self) -> &str {
         unsafe { core::ffi::CStr::from_ptr(self.info.model_name.as_ptr()) }
             .to_str()
-            .unwrap()
+            .expect("Invalid UTF-8 in model name")
+    }
+
+    pub fn drm(&self) -> String {
+        let out = String::from_utf8_lossy(
+            self.info
+                .drm_card_connector
+                .iter()
+                .map(|&c| c as u8)
+                .take_while(|&c| c != 0)
+                .collect::<Vec<u8>>()
+                .as_slice(),
+        )
+        .to_string();
+        out
+        // unsafe { core::ffi::CStr::from_ptr(self.info.drm_card_connector.as_ptr()) }
+        //     .to_str()
+        //     .ok()
     }
 }
 
@@ -211,4 +256,13 @@ impl From<DDCA_IO_Path> for IOPath {
             unreachable!("DDCUTIL returned an unknown IOPath");
         }
     }
+}
+
+pub fn version() -> semver::Version {
+    let version = unsafe { ddca_ddcutil_version() };
+    semver::Version::new(
+        version.major as u64,
+        version.minor as u64,
+        version.micro as u64,
+    )
 }
