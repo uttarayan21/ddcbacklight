@@ -1,7 +1,24 @@
 ## DDCBacklight
 
-Super simple ddc/ci based backlight control in rust
+DDC/CI based monitor brightness control in rust
+Can be used to switch inputs as well (can be used as an alternative to a kvm swtich)
 
-Uses libddcutil as the underlying library
+```
+Usage: xbacklight [OPTIONS] <COMMAND>
 
-While there already exists the [ddcutil-sys](https://github.com/arcnmx/ddcutil-rs) crate they seem very old so I just rolled my own.
+Commands:
+  set          
+  get          
+  inc          
+  dec          
+  set-input    
+  get-input    
+  completions  
+  help         Print this message or the help of the given subcommand(s)
+
+Options:
+  -v, --verbosity...  
+  -h, --help          Print help
+```
+
+
