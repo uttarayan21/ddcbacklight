@@ -73,13 +73,13 @@
             # ];
             buildInputs = with pkgs;
               [ddcutil]
-              ++ (lib.optionals pkgs.stdenv.isDarwin [
+              ++ (lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
                 libiconv
                 # darwin.apple_sdk.frameworks.Metal
               ]);
             nativeBuildInputs = with pkgs; [pkg-config];
           }
-          // (lib.optionalAttrs pkgs.stdenv.isLinux {
+          // (lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
             # BINDGEN_EXTRA_CLANG_ARGS = "-I${pkgs.llvmPackages.libclang.lib}/lib/clang/18/include";
           });
         cargoArtifacts = craneLib.buildPackage commonArgs;
@@ -112,7 +112,7 @@
                 partitionType = "count";
               });
           }
-          // lib.optionalAttrs (!pkgs.stdenv.isDarwin) {
+          // lib.optionalAttrs (!pkgs.stdenv.hostPlatform.isDarwin) {
             ddcbacklight-llvm-cov = craneLibLLvmTools.cargoLlvmCov (commonArgs // {inherit cargoArtifacts;});
           };
 
